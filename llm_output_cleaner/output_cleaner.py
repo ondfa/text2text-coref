@@ -1,12 +1,11 @@
 from collections import defaultdict
 from itertools import chain
 from typing import List
-
 import re
-
 import logging
 
 logger = logging.getLogger(__name__)
+
 
 def _correct_tags(tok_sentence):
     """
@@ -245,13 +244,15 @@ def read_conllu(filename: str, zero_mentions: bool) -> List[List[List[str]]]:
 
     return gold_docs_tok2
 
+
 def read_input_file(filename: str) -> List[str]:
     """
     Reads an input file as a list of documents.
     """
     with open(filename, "r", encoding="utf-8") as f:
         return [line.strip() for line in f.readlines()]
-        
+
+
 def clean_data(
     docs: List[str], gold: List[List[List[str]]]
 ) -> List[str]:
@@ -280,32 +281,3 @@ def clean_file(
     with open(output_filename, "w", encoding="utf-8") as f:
         clean = [line + "\n" for line in clean]
         f.writelines(clean)
-
-
-if __name__ == "__main__":
-    from argparse import ArgumentParser
-
-    parser = ArgumentParser(
-        prog="output_cleaner",
-        description="LLM Output Cleaner for Coreference Resolution",
-    )
-
-    parser.add_argument("filename")
-    parser.add_argument("gold_filename")
-    parser.add_argument("-o", "--output_filename", default=None)
-    parser.add_argument(
-        "-z",
-        "--zero_mentions",
-        action="store_true",
-        help="Include zero mentions (implied pronouns) in output text.",
-    )
-
-    args = parser.parse_args()
-
-    logging.basicConfig(
-        level=logging.DEBUG,
-        format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
-        datefmt="%m/%d/%Y %H:%M:%S",
-    )
-
-    clean_file(**vars(args))
