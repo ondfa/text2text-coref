@@ -20,7 +20,7 @@ classifiers = [
 ]
 
 [project.scripts]
-text2text_coref = "text2text_coref.main:main"
+text2text_coref = "text2text_coref.__main__:main"
 
 
 [project.urls]

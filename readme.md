@@ -1,29 +1,46 @@
-# LLM Output Cleaner for Coreference Resolution
+# Data formatter for text-to-text coreference resolution
 
-A Python tool that cleans and validates tagged text output from Language Models (LLMs) for coreference resolution tasks. The script ensures proper word alignment with reference text and maintains correct entity tag formatting while preserving as many original annotations as possible.
+A Python tool that converts annotated coreference data in CoNLLu format into linear text format, cleans and validates tagged text output from Language Models (LLMs), and converts the output back to CoNLLu for evaluation. The script ensures proper word alignment with reference text and maintains correct entity tag formatting while preserving as many original annotations as possible.
 
 ## Usage
 
-Assumes functional Python 3.7+, there are no additional dependencies.
+Assumes functional Python 3.10+, requires `udapi` package.
 
 ### Command Line Interface
 
+The program has three commands:
+  1) `conllu2text` - converts standard CorefUD CoNLLu format into linear text with eid annotations in the following form: `Introduction|(e1) Research|(e2 on adult|(e3 - learned second language|e3) ( L2|(e3) )|e2)` 
+  2) `clean` - For correcting the output of LLM.
+  3) `text2conllu` - Converts corrected output back to CoNLLu for evaluation
+
 The basic usage pattern is:
-
 ```bash
-python output_cleaner.py <input_file> <gold_file> [options]
+python -m text2text_coref action [options]
 ```
 
-Arguments:
-- `input_file`: Path to the file containing LLM tagged output
-- `gold_file`: Path to the reference CoNLL-U file
-- `-o, --output_filename`: Optional output file path (default: input_filename-cleaned.txt)
-- `-z, --zero_mentions`: Include zero mentions/implied pronouns in output (default: False)
+There are several usage scenarios:
 
-Example:
-```bash
-python output_cleaner.py sample_data/en_gum_dev_4o_mini.txt sample_data/en_gum-corefud-dev.conllu
-```
+### zero-shot prediction
+
+1) Prepare blind text files: `text2text_coref conllu2text <input_file> --blind [--sequential_ids --zero_mentions]`
+2) Run LLM on blind text file.
+3) Clean the output of LLM: `text2text_coref clean <input_file> <conll_skeleton_file>`
+4) Convert cleaned file back to CoNLLu: `text2text_coref text2conllu <input_file> <conll_skeleton_file>`
+5) Run `CorefUD-scorer` on the output CoNLLu and the gold file.
+
+### Fine-tuning
+
+1) Prepare blind text files: `text2text_coref conllu2text <input_file> --blind -o input_data.txt`
+2) Prepare gold inputs in text format: `text2text_coref conllu2text <input_file> -o gold_data.txt`
+3) Fine-tune LLM
+4) Run steps 2-5 from previous example.
+
+
+### TIPS
+
+- If you want to train a model to predict also the empty nodes and/or zero mentions add them to the train/test data with `--zero_mentions` option (`--blind --zero_mentions` generates just empty nodes) 
+- Using `--sequential_ids` is recommended since LLm can learn increasing entity numbers from 1 per document but it cannot guess the shift when we have global EID like in CorefUD.
+
 
 ### Python API
 

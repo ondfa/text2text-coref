@@ -34,7 +34,7 @@ def write_data(docs, f):
     logging.getLogger().setLevel(level)
 
 
-def convert_text_file_to_conllu(filename, skeleton_filename, output_filename, zero_mentions=True):
+def convert_text_file_to_conllu(filename, skeleton_filename, output_filename, zero_mentions=False):
     if not output_filename:
         output_filename = filename.replace(".txt", ".conllu")
     with open(filename, encoding="utf-8") as f:
