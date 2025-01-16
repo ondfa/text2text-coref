@@ -30,18 +30,18 @@ python output_cleaner.py sample_data/en_gum_dev_4o_mini.txt sample_data/en_gum-c
 You can also use the cleaner programmatically:
 
 ```python
-from output_cleaner import clean_file, clean_data
+from src.text2text_coref.output_cleaner import clean_file
 
 # Using the high-level interface
 clean_file(
-    filename="input.txt",
-    gold_filename="reference.conllu",
-    output_filename="cleaned.txt",
-    zero_mentions=True
+  filename="input.txt",
+  gold_filename="reference.conllu",
+  output_filename="cleaned.txt",
+  zero_mentions=True
 )
 
 # Or process data directly
-from output_cleaner import read_input_file, read_conllu, clean_data
+from src.text2text_coref.output_cleaner import read_input_file, read_conllu, clean_data
 
 input_docs = read_input_file("input.txt")
 gold_docs = read_conllu("reference.conllu", zero_mentions=True)

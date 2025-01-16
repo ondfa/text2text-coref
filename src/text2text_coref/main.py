@@ -1,11 +1,12 @@
 import logging
 
-from convert import convert_text_file_to_conllu, convert_conllu_file_to_text
-from output_cleaner import clean_file
+from .convert import convert_text_file_to_conllu, convert_conllu_file_to_text
+from .output_cleaner import clean_file
+
 
 def parse_args():
     from argparse import ArgumentParser
-    main_parser = ArgumentParser(prog="coref_convertor",
+    main_parser = ArgumentParser(prog="text2text_coref",
                                  description="Coreference resolution plaintext convertor",)
     subparsers = main_parser.add_subparsers(required=True, dest='action')
     parser = subparsers.add_parser(
@@ -73,7 +74,7 @@ def parse_args():
     return main_parser.parse_args()
 
 
-if __name__ == "__main__":
+def main():
     args = parse_args()
     logging.basicConfig(
         level=logging.DEBUG,
@@ -89,3 +90,7 @@ if __name__ == "__main__":
     else:
         del args.action
         convert_conllu_file_to_text(**vars(args))
+
+
+if __name__ == "__main__":
+    main()

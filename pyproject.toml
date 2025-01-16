@@ -1,0 +1,28 @@
+[project]
+name = "text2text_coref"
+version = "0.0.1"
+authors = [
+    {name="Ondřej Pražák", email="ondfa@ntis.zcu.cz" },
+    {name="Jakub Hejman", email="hejmanj@students.zcu.cz"}
+]
+description = "Program for working with linear text format for coreference resolution"
+readme = "README.md"
+license = {file = "LICENSE"}
+requires-python = ">=3.10"
+dependencies = [
+    "udapi"
+]
+
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[project.scripts]
+text2text_coref = "text2text_coref.main:main"
+
+
+[project.urls]
+Homepage = "https://github.com/ondfa/text2text-coref"
+Issues = "https://github.com/ondfa/text2text-coref"

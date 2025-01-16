@@ -1,14 +1,9 @@
 import logging
-import os
-import shutil
 
 import udapi
 from udapi.block.corefud.movehead import MoveHead
 from udapi.block.read.conllu import Conllu as ConlluReader
 from udapi.block.write.conllu import Conllu as ConlluWriter
-
-import subprocess
-
 from udapi.core.coref import BridgingLinks
 
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s - %(message)s',
