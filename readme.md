@@ -1,6 +1,6 @@
 # Data formatter for text-to-text coreference resolution
 
-A Python tool that converts annotated coreference data in CoNLLu format into linear text format, cleans and validates tagged text output from Language Models (LLMs), and converts the output back to CoNLLu for evaluation. The script ensures proper word alignment with reference text and maintains correct entity tag formatting while preserving as many original annotations as possible.
+A Python tool that converts annotated coreference data in CoNLLu format into linear text format cleans and validates tagged text output from Language Models (LLMs) and converts the output back to CoNLLu for evaluation. The script ensures proper word alignment with reference text and maintains correct entity tag formatting while preserving as many original annotations as possible.
 
 ## Usage
 
@@ -9,7 +9,7 @@ Assumes functional Python 3.10+, requires `udapi` package.
 ### Command Line Interface
 
 The program has three commands:
-  1) `conllu2text` - converts standard CorefUD CoNLLu format into linear text with eid annotations in the following form: `Introduction|(e1) Research|(e2 on adult|(e3 - learned second language|e3) ( L2|(e3) )|e2)` 
+  1) `conllu2text` - converts standard CorefUD CoNLLu format into linear text with eid annotations in the following form: `Introduction|(e1) Research|(e2 on adult|(e3 - learned second language|e3) ( L2|(e3) )|e2)`. The text is space-tokenized and after each token that has some entity annotations there is '|' and entity annotations right after in exactly the same form as in the original CoNLLu. 
   2) `clean` - For correcting the output of LLM.
   3) `text2conllu` - Converts corrected output back to CoNLLu for evaluation
 
