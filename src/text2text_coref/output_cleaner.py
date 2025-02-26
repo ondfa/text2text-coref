@@ -32,7 +32,7 @@ def _correct_tags(tok_sentence):
         elif len(splits) == 2:
             tags = splits[1].split(",")
 
-            ptags = map(lambda x: re.match(r"(\(?)e(\d+)(\)?)", x), tags)
+            ptags = map(lambda x: re.match(r"(\[?)e(\d+)(]?)", x), tags)
             ptags = map(lambda x: x.groups() if x else ("", "", ""), ptags)
 
             clean_tags = []
@@ -54,7 +54,7 @@ def _correct_tags(tok_sentence):
                         clean_tags.append(tag)
                     else:
                         num_wrong_para += 1
-                        clean_tags.append("(" + tag)
+                        clean_tags.append("[" + tag)
 
                 else:
                     logging.debug(f"warning: completely invalid tag in: {word}")
@@ -83,7 +83,7 @@ def _correct_tags(tok_sentence):
                     "Mismatched entity when correcting tags"
                 )
 
-                tags[tag_idx] = tags[tag_idx] + ")"
+                tags[tag_idx] = tags[tag_idx] + "]"
 
                 clean_toks[word_idx] = f"{word}|{','.join(tags)}"
 

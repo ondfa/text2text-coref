@@ -68,17 +68,17 @@ def convert_text_to_conllu(text_docs, conllu_skeleton_file, out_file, solve_empt
             if "|" in word:
                 mentions = word.split("|")[1].replace("-", ",").split(",")
                 for mention in mentions:
-                    eid = mention.replace("(", "").replace(")", "")
+                    eid = mention.replace("[", "").replace("]", "")
                     if len(eid) == 0:
                         continue
                     if eid not in entities:
                         entities[eid] = udapi_doc.create_coref_entity(eid=eid)
-                    if mention.startswith("("):
+                    if mention.startswith("["):
                         if eid in mention_starts:
                             logger.warning(f"WARNING: Multiple mentions of the same entity opened. DOC: {udapi_doc.meta['docname']}, EID: {eid}")
                             # continue
                         mention_starts[eid] = i
-                    if mention[-1] == ")":
+                    if mention[-1] == "]":
                         if eid not in mention_starts:
                             logger.warning(f"WARNING: Closing mention which was not opened. DOC: {udapi_doc.meta['docname']}, EID: {eid}")
                             continue
@@ -126,11 +126,11 @@ def convert_to_text(docs, out_file, solve_empty_nodes=True, mark_entities=True, 
                         mention_start = float(span.split("-")[0])
                         mention_end = float(span.split("-")[1]) if "-" in span else mention_start
                         if mention_start == float(word.ord) and mention_end == float(word.ord):
-                            mentions.append(f"({eid})")
+                            mentions.append(f"[{eid}]")
                         elif mention_start == float(word.ord):
-                            mentions.append(f"({eid}")
+                            mentions.append(f"[{eid}")
                         elif mention_end == float(word.ord):
-                            mentions.append(f"{eid})")
+                            mentions.append(f"{eid}]")
                 if len(mentions) > 0:
                     out_words.append(f"{out_word}|{','.join(mentions)}")
                 else:
