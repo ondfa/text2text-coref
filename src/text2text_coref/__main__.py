@@ -1,7 +1,7 @@
 import logging
 
-from .convert import convert_text_file_to_conllu, convert_conllu_file_to_text
-from .output_cleaner import clean_file
+from convert import convert_text_file_to_conllu, convert_conllu_file_to_text
+from output_cleaner import clean_file
 
 
 def parse_args():
@@ -23,7 +23,7 @@ def parse_args():
         "-z",
         "--zero_mentions",
         action="store_true",
-        help="Include zero mentions (implied pronouns) in output text.",
+        help="Map zero mentions in the output to the gold empty nodes in CoNLLu.",
     )
 
     conllu2text_parser = subparsers.add_parser(

@@ -99,7 +99,7 @@ def _correct_tags(tok_sentence):
     return clean_toks
 
 
-def _word_level_edit_distance(words1, words2, tagged_words1):
+def _word_level_edit_distance(words1, words2, tagged_words1, gold_zeros=False):
     """
     Uses an edit-distance-like algorithm to match up the words between
     two versions of a document. Tagged words are used to carry over
@@ -118,7 +118,10 @@ def _word_level_edit_distance(words1, words2, tagged_words1):
     # fill the dp table
     for i in range(1, m + 1):
         for j in range(1, n + 1):
-            if words1[i - 1] == words2[j - 1]:
+            if not gold_zeros and words1[i - 1].startswith("##"):
+                # empty nodes are ignored (deleted for free)
+                dp[i][j] = dp[i - 1][j]
+            elif words1[i - 1] == words2[j - 1]:
                 dp[i][j] = dp[i - 1][j - 1]
             else:
                 dp[i][j] = min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]) + 1
@@ -130,7 +133,11 @@ def _word_level_edit_distance(words1, words2, tagged_words1):
     i, j = m, n
 
     while i > 0 and j > 0:
-        if words1[i - 1] == words2[j - 1]:
+        if not gold_zeros and words1[i - 1].startswith("##"):
+            # empty nodes always copied over
+            result.append(tagged_words1[i - 1])
+            i -= 1
+        elif words1[i - 1] == words2[j - 1]:
             # same case - actually use tags
             result.append(tagged_words1[i - 1])
             i -= 1
@@ -163,7 +170,7 @@ def _word_level_edit_distance(words1, words2, tagged_words1):
     return result
 
 
-def _clean_document(document, gold_tok2):
+def _clean_document(document, gold_tok2, gold_zeros=False):
     """
     Applies both stages of cleaning on one document.
     """
@@ -173,7 +180,7 @@ def _clean_document(document, gold_tok2):
     flattened_gold = list(chain(*gold_tok2))
 
     correct_words = _word_level_edit_distance(
-        stripped_doc, flattened_gold, doc_words
+        stripped_doc, flattened_gold, doc_words, gold_zeros
     )
 
     final_sentences = []
@@ -181,10 +188,19 @@ def _clean_document(document, gold_tok2):
     offset = 0
     for ref_sentence in gold_tok2:
         ln = len(ref_sentence)
-        sentence = correct_words[offset : offset + ln]
-        offset += ln
-
+        i = 0
+        zeros = 0
+        if not gold_zeros:
+            while i < ln:
+                if not correct_words[offset + i + zeros].startswith("##"):
+                    # empty nodes are always copied over
+                    i += 1
+                else:
+                    zeros += 1
+        sentence = correct_words[offset : offset + ln + zeros]
+        offset += ln + zeros
         correct_sentence = _correct_tags(sentence)
+        assert len(correct_sentence) == len(ref_sentence) + zeros
         final_sentences.append(" ".join(correct_sentence))
 
     return " ".join(final_sentences)
@@ -232,7 +248,7 @@ def read_conllu(filename: str, zero_mentions: bool) -> List[List[List[str]]]:
             number, word = line.split()[:2]
 
             if not zero_mentions and "." in number:
-                continue  # skip sero mentions
+                continue  # skip empty nodes
 
             if "-" in number:
                 continue  # always skip multitokens
@@ -254,9 +270,9 @@ def read_input_file(filename: str) -> List[str]:
 
 
 def clean_data(
-    docs: List[str], gold: List[List[List[str]]]
+    docs: List[str], gold: List[List[List[str]]], gold_zeros: bool = False
 ) -> List[str]:
-    return [_clean_document(doc, gold_doc) for doc, gold_doc in zip(docs, gold)]
+    return [_clean_document(doc, gold_doc, gold_zeros) for doc, gold_doc in zip(docs, gold)]
 
 
 def clean_file(
@@ -272,7 +288,7 @@ def clean_file(
     gold_docs_tok2 = read_conllu(gold_filename, zero_mentions)
 
     logging.info("Cleaning data")
-    clean = clean_data(data, gold_docs_tok2)
+    clean = clean_data(data, gold_docs_tok2, gold_zeros=zero_mentions)
 
     if not output_filename:
         output_filename = filename.replace(".txt", "-cleaned.txt")

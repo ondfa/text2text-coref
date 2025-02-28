@@ -2,6 +2,7 @@ import logging
 
 import udapi
 from udapi.block.corefud.movehead import MoveHead
+from udapi.block.corefud.singleparent import SingleParent
 from udapi.block.read.conllu import Conllu as ConlluReader
 from udapi.block.write.conllu import Conllu as ConlluWriter
 from udapi.core.coref import BridgingLinks
@@ -14,11 +15,13 @@ logger = logging.getLogger()
 
 def read_data(file):
     move_head = MoveHead()
+    single_parent = SingleParent()
     docs = ConlluReader(files=file, split_docs=True).read_documents()
     level = logging.getLogger().level
     logging.getLogger().setLevel(logging.ERROR)
     for doc in docs:
         move_head.run(doc)
+        single_parent.run(doc)
     logging.getLogger().setLevel(level)
     return docs
 
@@ -42,6 +45,19 @@ def convert_text_file_to_conllu(filename, skeleton_filename, output_filename, ze
         convert_text_to_conllu(text_docs, skeleton_filename, output_filename, zero_mentions)
 
 
+def remove_empty_node(node):
+    """Delete this empty node."""
+    for n in node.root.empty_nodes + node.root.descendants:
+        if n.deps:
+            n.deps = [x for x in n.deps if x["parent"] != node]
+    to_reorder = [e for e in node.root.empty_nodes if node.ord < e.ord < node.ord + 1]
+    for empty in to_reorder:
+        empty.ord = round(empty.ord - 0.1, 1)
+    try:
+        node.root.empty_nodes.remove(node)
+    except ValueError:
+        return # self may be an already deleted node e.g. if n.remove() called twice
+
 def convert_text_to_conllu(text_docs, conllu_skeleton_file, out_file, solve_empty_nodes=True):
     udapi_docs = read_data(conllu_skeleton_file)
     # udapi_docs2 = read_data(conllu_skeleton_file)
@@ -50,13 +66,24 @@ def convert_text_to_conllu(text_docs, conllu_skeleton_file, out_file, solve_empt
         doc._eid_to_entity = {}
     assert len(udapi_docs) == len(text_docs)
     for text, udapi_doc in zip(text_docs, udapi_docs):
-        if solve_empty_nodes:
-            udapi_words = [word for word in udapi_doc.nodes_and_empty]
-        else:
-            udapi_words = [word for word in udapi_doc.nodes]
+        words = text.split(" ")
+        udapi_words = [word for word in udapi_doc.nodes]
         for word in udapi_doc.nodes_and_empty:
             word.misc = {}
-        words = text.split(" ")
+            # Remove empty nodes
+            if word.is_empty():
+                remove_empty_node(word)
+        j = 0
+        for i in range(len(udapi_words)):
+            word = udapi_words[i]
+            while words[j].startswith("##"):
+                word.create_empty_child("_", after=False)
+                j += 1
+            j += 1
+        udapi_words = [word for word in udapi_doc.nodes_and_empty]
+        for i in range(len(udapi_words)):
+            if udapi_words[i].form != words[i].split("|")[0]:
+                logger.warning(f"WARNING: words do not match. DOC: {udapi_doc.meta['docname']}, word1: {words[i].split('|')[0]}, word2: {udapi_words[i].form}, i: {i}")
         if len(udapi_words) != len(words):
             continue
         assert len(udapi_words) == len(words)
@@ -98,17 +125,39 @@ def convert_conllu_file_to_text(filename, output_filename, zero_mentions, blind=
     convert_to_text(docs, output_filename, zero_mentions, not blind, sequential_ids)
 
 
+def shift_empty_node(node):
+    if not node.is_empty():
+        return
+    if int(node.ord) == node.deps[0]["parent"].ord - 1:
+        return
+    new_ord = node.deps[0]["parent"].ord - 0.9
+    empties = node.deps[0]["parent"].root.empty_nodes
+    for empty in empties:
+        if int(empty.ord) == node.deps[0]["parent"].ord - 1:
+            new_ord += 0.1
+    node.ord = new_ord
+    node.deps[0]["parent"].root.empty_nodes.sort()
+
+
+
+
 def convert_to_text(docs, out_file, solve_empty_nodes=True, mark_entities=True, sequential_ids=False):
     with open(out_file, "w", encoding="utf-8") as f:
         for doc in docs:
             eids = {}
             out_words = []
             if solve_empty_nodes:
+                for node in doc.nodes_and_empty:
+                    if node.is_empty():
+                        # node.shift_before_node(node.deps[0]["parent"])
+                        shift_empty_node(node)
                 udapi_words = [word for word in doc.nodes_and_empty]
             else:
                 udapi_words = [word for word in doc.nodes]
             for word in udapi_words:
                 out_word = word.form
+                if word.is_empty():
+                    out_word = "##" + out_word # empty nodes start with ##
                 if word.lemma.startswith("#") and solve_empty_nodes:
                     out_word += word.lemma
                 mentions = []
@@ -122,7 +171,14 @@ def convert_to_text(docs, out_file, solve_empty_nodes=True, mark_entities=True, 
                             eid = mention.entity.eid
                         span = mention.span
                         if "," in span:
-                            span = span.split(",")[0]
+                            # span = span.split(",")[0]
+                            root = mention.words[0].root
+                            for subspan in span.split(','):
+                                subspan_words = udapi.core.coref.span_to_nodes(root, subspan)
+                                if mention.head in subspan_words:
+                                    mention.words = subspan_words
+                                    span = subspan
+                                    break
                         mention_start = float(span.split("-")[0])
                         mention_end = float(span.split("-")[1]) if "-" in span else mention_start
                         if mention_start == float(word.ord) and mention_end == float(word.ord):
