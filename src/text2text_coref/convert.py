@@ -58,7 +58,7 @@ def remove_empty_node(node):
     except ValueError:
         return # self may be an already deleted node e.g. if n.remove() called twice
 
-def convert_text_to_conllu(text_docs, conllu_skeleton_file, out_file, solve_empty_nodes=True):
+def convert_text_to_conllu(text_docs, conllu_skeleton_file, out_file, use_gold_empty_nodes=True):
     udapi_docs = read_data(conllu_skeleton_file)
     # udapi_docs2 = read_data(conllu_skeleton_file)
     move_head = MoveHead()
@@ -71,15 +71,16 @@ def convert_text_to_conllu(text_docs, conllu_skeleton_file, out_file, solve_empt
         for word in udapi_doc.nodes_and_empty:
             word.misc = {}
             # Remove empty nodes
-            if word.is_empty():
+            if not use_gold_empty_nodes and word.is_empty():
                 remove_empty_node(word)
-        j = 0
-        for i in range(len(udapi_words)):
-            word = udapi_words[i]
-            while words[j].startswith("##"):
-                word.create_empty_child("_", after=False)
+        if not use_gold_empty_nodes:
+            j = 0
+            for i in range(len(udapi_words)):
+                word = udapi_words[i]
+                while words[j].startswith("##"):
+                    word.create_empty_child("_", after=False)
+                    j += 1
                 j += 1
-            j += 1
         udapi_words = [word for word in udapi_doc.nodes_and_empty]
         for i in range(len(udapi_words)):
             if udapi_words[i].form != words[i].split("|")[0]:
