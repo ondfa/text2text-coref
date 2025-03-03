@@ -9,7 +9,9 @@ Assumes functional Python 3.10+, requires `udapi` package.
 ### Command Line Interface
 
 The program has three commands:
-  1) `conllu2text` - converts standard CorefUD CoNLLu format into linear text with eid annotations in the following form: `Introduction|(e1) Research|(e2 on adult|(e3 - learned second language|e3) ( L2|(e3) )|e2)` 
+  1) `conllu2text` - converts standard CorefUD CoNLLu format into linear text with eid annotations in the following form: `Los|[e1 jugadores de el Espanyol|[e2],e1] aseguraron hoy que ##|[e1] prefieren enfrentar se a el Barcelona|[e3]
+en la|[e4 final de la|[e5 Copa de el Rey|e4],e5] en lugar de en las|[e6 semifinales|e6] , tras clasificar se ayer
+ambos|[e7 equipos catalanes|e7] para esta|[e6 ronda|e6] .` 
   2) `clean` - For correcting the output of LLM.
   3) `text2conllu` - Converts corrected output back to CoNLLu for evaluation
 
