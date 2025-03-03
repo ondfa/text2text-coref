@@ -158,7 +158,7 @@ def convert_to_text(docs, out_file, solve_empty_nodes=True, mark_entities=True, 
             for word in udapi_words:
                 out_word = word.form
                 if word.is_empty():
-                    out_word = "##" + out_word # empty nodes start with ##
+                    out_word = "##" + (out_word if out_word != "_" else "") # empty nodes start with ##
                 if word.lemma.startswith("#") and solve_empty_nodes:
                     out_word += word.lemma
                 mentions = []
