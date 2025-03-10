@@ -1,4 +1,5 @@
 import logging
+from collections import defaultdict
 
 import udapi
 from udapi.block.corefud.movehead import MoveHead
@@ -88,7 +89,7 @@ def convert_text_to_conllu(text_docs, conllu_skeleton_file, out_file, use_gold_e
         if len(udapi_words) != len(words):
             continue
         assert len(udapi_words) == len(words)
-        mention_starts = {}
+        mention_starts = defaultdict(list)
         entities = {}
         for i, (word, udapi_word) in enumerate(zip(words, udapi_words)):
             if word.split("|")[0] != udapi_word.form:
@@ -102,16 +103,13 @@ def convert_text_to_conllu(text_docs, conllu_skeleton_file, out_file, use_gold_e
                     if eid not in entities:
                         entities[eid] = udapi_doc.create_coref_entity(eid=eid)
                     if mention.startswith("["):
-                        if eid in mention_starts:
-                            logger.warning(f"WARNING: Multiple mentions of the same entity opened. DOC: {udapi_doc.meta['docname']}, EID: {eid}")
-                            # continue
-                        mention_starts[eid] = i
+                        mention_starts[eid].append(i)
                     if mention[-1] == "]":
-                        if eid not in mention_starts:
+                        if not mention_starts[eid]:
                             logger.warning(f"WARNING: Closing mention which was not opened. DOC: {udapi_doc.meta['docname']}, EID: {eid}")
                             continue
-                        entities[eid].create_mention(words=udapi_words[mention_starts[eid]: i + 1])
-                        del mention_starts[eid]
+                        entities[eid].create_mention(words=udapi_words[mention_starts[eid][-1]: i + 1])
+                        mention_starts[eid].pop()
         udapi.core.coref.store_coref_to_misc(udapi_doc)
         move_head.run(udapi_doc)
     # debug_udapi(udapi_docs, udapi_docs2)
