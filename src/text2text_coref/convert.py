@@ -127,12 +127,12 @@ def convert_conllu_file_to_text(filename, output_filename, zero_mentions, blind=
 def shift_empty_node(node):
     if not node.is_empty():
         return
-    if int(node.ord) == node.deps[0]["parent"].ord - 1:
+    if int(node.ord) == node.deps[0]["parent"].ord:
         return
-    new_ord = node.deps[0]["parent"].ord - 0.9
+    new_ord = node.deps[0]["parent"].ord + 0.1
     empties = node.deps[0]["parent"].root.empty_nodes
     for empty in empties:
-        if int(empty.ord) == node.deps[0]["parent"].ord - 1:
+        if int(empty.ord) == node.deps[0]["parent"].ord:
             new_ord += 0.1
     node.ord = new_ord
     node.deps[0]["parent"].root.empty_nodes.sort()
