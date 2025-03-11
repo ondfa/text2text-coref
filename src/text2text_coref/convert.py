@@ -86,8 +86,8 @@ def convert_text_to_conllu(text_docs, conllu_skeleton_file, out_file, use_gold_e
         for i in range(len(udapi_words)):
             if udapi_words[i].form != words[i].split("|")[0]:
                 logger.warning(f"WARNING: words do not match. DOC: {udapi_doc.meta['docname']}, word1: {words[i].split('|')[0]}, word2: {udapi_words[i].form}, i: {i}")
-        if len(udapi_words) != len(words):
-            continue
+        # if len(udapi_words) != len(words):
+        #     continue
         assert len(udapi_words) == len(words)
         mention_starts = defaultdict(list)
         entities = {}
@@ -154,7 +154,7 @@ def convert_to_text(docs, out_file, solve_empty_nodes=True, mark_entities=True, 
             else:
                 udapi_words = [word for word in doc.nodes]
             for word in udapi_words:
-                out_word = word.form
+                out_word = word.form.replace(" ", "_")
                 if word.is_empty():
                     out_word = "##" + (out_word if out_word != "_" else "") # empty nodes start with ##
                 if word.is_empty() and solve_empty_nodes:
@@ -187,7 +187,7 @@ def convert_to_text(docs, out_file, solve_empty_nodes=True, mark_entities=True, 
                         elif mention_end == float(word.ord):
                             mentions.append(f"{eid}]")
                 if len(mentions) > 0:
-                    out_words.append(f"{out_word}|{','.join(mentions)}")
+                    out_words.append(f"{out_word}|{','.join(sorted(mentions))}")
                 else:
                     out_words.append(out_word)
             f.write(" ".join(out_words) + "\n")

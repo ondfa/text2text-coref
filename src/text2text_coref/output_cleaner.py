@@ -246,7 +246,7 @@ def read_conllu(filename: str, zero_mentions: bool) -> List[List[List[str]]]:
                 continue
 
             number, word = line.split()[:2]
-
+            word = word.replace(" ", "_")
             if not zero_mentions and "." in number:
                 continue  # skip empty nodes
 

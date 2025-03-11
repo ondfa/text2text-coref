@@ -20,6 +20,8 @@ The basic usage pattern is:
 python -m text2text_coref action [options]
 ```
 
+Note: you need to install the package first with `pip install .` in the root directory or directly from GitHub with `pip install git+https://github.com/ondfa/text2text-coref`
+
 There are several usage scenarios:
 
 ### zero-shot prediction
