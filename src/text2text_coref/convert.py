@@ -75,11 +75,11 @@ def convert_text_to_conllu(text_docs, conllu_skeleton_file, out_file, use_gold_e
             if not use_gold_empty_nodes and word.is_empty():
                 remove_empty_node(word)
         if not use_gold_empty_nodes:
-            j = 0
+            j = 1
             for i in range(len(udapi_words)):
                 word = udapi_words[i]
-                while words[j].startswith("##"):
-                    word.create_empty_child("_", after=False)
+                while j < len(words) and words[j].startswith("##"):
+                    word.create_empty_child("_", after=True)
                     j += 1
                 j += 1
         udapi_words = [word for word in udapi_doc.nodes_and_empty]
