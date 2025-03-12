@@ -17,13 +17,17 @@ logger = logging.getLogger()
 def read_data(file):
     move_head = MoveHead()
     single_parent = SingleParent()
+    move_head.process_start()
+    single_parent.process_start()
     docs = ConlluReader(files=file, split_docs=True).read_documents()
-    level = logging.getLogger().level
-    logging.getLogger().setLevel(logging.ERROR)
+    # level = logging.getLogger().level
+    # logging.getLogger().setLevel(logging.ERROR)
     for doc in docs:
-        move_head.run(doc)
-        single_parent.run(doc)
-    logging.getLogger().setLevel(level)
+        single_parent.apply_on_document(doc)
+        move_head.apply_on_document(doc)
+    # logging.getLogger().setLevel(level)
+    move_head.process_end()
+    single_parent.process_end()
     return docs
 
 
@@ -129,11 +133,11 @@ def shift_empty_node(node):
         return
     if int(node.ord) == node.deps[0]["parent"].ord:
         return
-    new_ord = node.deps[0]["parent"].ord + 0.1
+    new_ord = round(node.deps[0]["parent"].ord + 0.1, 1)
     empties = node.deps[0]["parent"].root.empty_nodes
     for empty in empties:
         if int(empty.ord) == node.deps[0]["parent"].ord:
-            new_ord += 0.1
+            new_ord = round(new_ord + 0.1, 1)
     node.ord = new_ord
     node.deps[0]["parent"].root.empty_nodes.sort()
 
