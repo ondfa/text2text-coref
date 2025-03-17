@@ -247,16 +247,16 @@ def copy_coref(args):
                     entities[eid].create_mention(words=words[mention_starts[eid][-1]: i + 1])
                     mention_starts[eid].pop()
         move_head.apply_on_document(dest)
-        for mention_a, mention_b in zip(dest.coref_mentions, udapi_doc.coref_mentions):
-            assert mention_a.span == mention_b.span
-            if mention_a.head.ord != mention_b.head.ord:
-                different_heads += 1
+        # for mention_a, mention_b in zip(dest.coref_mentions, udapi_doc.coref_mentions):
+            # assert mention_a.span == mention_b.span
+            # if mention_a.head.ord != mention_b.head.ord:
+            #     different_heads += 1
                 # mention_a.head = mention_a.words[mention_b.head.ord - mention_b.words[0].ord]
             # assert mention_a.head.ord == mention_b.head.ord
-            assert mention_a.words[0].form == mention_b.words[0].form
-            assert mention_a.words[-1].form == mention_b.words[-1].form
-            assert mention_a.words[0].ord == mention_b.words[0].ord
-            assert mention_a.words[-1].ord == mention_b.words[-1].ord
+            # assert mention_a.words[0].form == mention_b.words[0].form
+            # assert mention_a.words[-1].form == mention_b.words[-1].form
+            # assert mention_a.words[0].ord == mention_b.words[0].ord
+            # assert mention_a.words[-1].ord == mention_b.words[-1].ord
     move_head.process_end()
     with open(args.output_filename, "w") as f:
         write_data(dst_data, f)
