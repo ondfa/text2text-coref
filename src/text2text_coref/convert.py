@@ -157,8 +157,6 @@ def convert_to_text(docs, out_file, solve_empty_nodes=True, mark_entities=True, 
                 out_word = word.form.replace(" ", "_")
                 if word.is_empty():
                     out_word = "##" + (out_word if out_word != "_" else "") # empty nodes start with ##
-                if word.is_empty() and solve_empty_nodes:
-                    out_word += word.lemma
                 mentions = []
                 if mark_entities:
                     for mention in set(word.coref_mentions):
