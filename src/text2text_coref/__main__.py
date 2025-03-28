@@ -55,6 +55,13 @@ def parse_args():
         help="Renumber entity ids starting from 1",
     )
 
+    conllu2text_parser.add_argument(
+        "-h",
+        "--head_only",
+        action="store_true",
+        help="Replace mentions with their head words",
+    )
+
     text2conllu_parser = subparsers.add_parser(
         "text2conllu",
         prog="text2conll_convertor",

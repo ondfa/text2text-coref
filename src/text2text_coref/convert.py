@@ -140,7 +140,7 @@ def shift_empty_node(node):
 
 
 
-def convert_to_text(docs, out_file, solve_empty_nodes=True, mark_entities=True, sequential_ids=False):
+def convert_to_text(docs, out_file, solve_empty_nodes=True, mark_entities=True, sequential_ids=False, head_only=False):
     with open(out_file, "w", encoding="utf-8") as f:
         for doc in docs:
             eids = {}
@@ -168,7 +168,7 @@ def convert_to_text(docs, out_file, solve_empty_nodes=True, mark_entities=True, 
                             eid = eids[mention.entity.eid]
                         else:
                             eid = mention.entity.eid
-                        span = mention.span
+                        span = str(mention.head.ord) if head_only else mention.span
                         if "," in span:
                             # span = span.split(",")[0]
                             root = mention.words[0].root
