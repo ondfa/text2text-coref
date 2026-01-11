@@ -10,7 +10,8 @@ readme = "README.md"
 license = {file = "LICENSE"}
 requires-python = ">=3.10"
 dependencies = [
-    "udapi @ git+https://github.com/udapi/udapi-python"
+    "udapi @ git+https://github.com/udapi/udapi-python",
+    "compact_json"
 ]
 
 classifiers = [

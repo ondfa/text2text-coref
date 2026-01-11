@@ -71,6 +71,49 @@ def parse_args():
         help="Map zero mentions in the output to the gold empty nodes in CoNLLu.",
     )
 
+    conllu2json_parser = subparsers.add_parser(
+        "conllu2json",
+        prog="conllu2json_convertor",
+        help="converts conllu with coference annotations into clustered json format"
+    )
+
+    conllu2json_parser.add_argument("filename")
+    conllu2json_parser.add_argument("-o", "--output_filename", default=None)
+    conllu2json_parser.add_argument(
+        "-s",
+        "--sequential_ids",
+        action="store_true",
+        help="Renumber entity ids starting from 1",
+    )
+    conllu2json_parser.add_argument(
+        "-z",
+        "--zero_mentions",
+        action="store_true",
+        help="Include zero mentions in output text.",
+    )
+
+    conllu2json_parser.add_argument(
+        "-b",
+        "--blind",
+        action="store_true",
+        help="discard annotations",
+    )
+
+    json2conllu_parser = subparsers.add_parser(
+        "json2conllu",
+        prog="json2conllu_convertor",
+        help="converts clustered json format into conllu with coference annotations"
+    )
+    json2conllu_parser.add_argument("json_filename")
+    json2conllu_parser.add_argument("conllu_skeleton_filename")
+    json2conllu_parser.add_argument("-o", "--output_filename", default=None)
+    json2conllu_parser.add_argument(
+        "-g",
+        "--use_gold_empty_nodes",
+        action="store_true",
+        help="Use gold empty nodes from the skeleton CoNLLu file.",
+    )
+
     return main_parser.parse_args()
 
 
@@ -87,9 +130,18 @@ def main():
     elif args.action == "text2conllu":
         del args.action
         convert_text_file_to_conllu(**vars(args))
-    else:
+    elif args.action == "conllu2text":
         del args.action
         convert_conllu_file_to_text(**vars(args))
+    elif args.action == "conllu2json":
+        from .json_format import convert_conllu_file_to_json
+        del args.action
+        convert_conllu_file_to_json(**vars(args))
+    elif args.action == "json2conllu":
+        from .json_format import convert_json_to_conllu
+        del args.action
+        convert_json_to_conllu(**vars(args))
+
 
 
 if __name__ == "__main__":
