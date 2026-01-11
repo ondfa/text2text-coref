@@ -28,8 +28,7 @@ def convert_to_json(docs, out_file, solve_empty_nodes=True, mark_entities=True, 
             out_word = word.form.replace(" ", "_")
             if word.is_empty():
                 out_word = "##" + (out_word if out_word != "_" else "") # empty nodes start with ##
-            out_words.append(out_word.replace('"', r'\"'))
-            # out_words.append(out_word)
+            out_words.append(out_word)
         clusters_token_offsets = None
         clusters_text_mentions = None
         if mark_entities:
@@ -57,12 +56,9 @@ def convert_to_json(docs, out_file, solve_empty_nodes=True, mark_entities=True, 
             "clusters_token_offsets": clusters_token_offsets,
             "clusters_text_mentions": clusters_text_mentions
         })
-    pretty_json_str = pprint.pformat(output_data, compact=True, sort_dicts=False).replace("'",'"')
     formatter = Formatter()
+    formatter.ensure_ascii = False
     formatter.dump(output_data, out_file)
-    # with open(out_file, "w", encoding="utf-8") as f:
-        # f.write(pretty_json_str)
-        # json.dump(output_data, f, indent=2, ensure_ascii=False)
 
 def convert_conllu_file_to_json(filename, output_filename, zero_mentions, blind=False, sequential_ids=True):
     if not output_filename:
@@ -104,10 +100,8 @@ def convert_json_to_conllu(json_filename, conllu_skeleton_filename, output_filen
         for i in range(len(udapi_words)):
             if udapi_words[i].form != words[i].split("|")[0]:
                 logger.warning(f"WARNING: words do not match. DOC: {udapi_doc.meta['docname']}, word1: {words[i].split('|')[0]}, word2: {udapi_words[i].form}, i: {i}")
-        # if len(udapi_words) != len(words):
-        #     continue
+
         assert len(udapi_words) == len(words)
-        mention_starts = defaultdict(list)
         entities = {}
         for entity in doc["clusters_token_offsets"]:
             eid = f"e{len(entities) + 1}"
