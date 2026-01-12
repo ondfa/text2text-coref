@@ -38,12 +38,12 @@ def write_data(docs, f):
     logging.getLogger().setLevel(level)
 
 
-def convert_text_file_to_conllu(filename, skeleton_filename, output_filename, zero_mentions=False):
+def convert_text_file_to_conllu(filename, skeleton_filename, output_filename, zero_mentions=False, break_mwt=False):
     if not output_filename:
         output_filename = filename.replace(".txt", ".conllu")
     with open(filename, encoding="utf-8") as f:
         text_docs = f.read().splitlines()
-        convert_text_to_conllu(text_docs, skeleton_filename, output_filename, zero_mentions)
+        convert_text_to_conllu(text_docs, skeleton_filename, output_filename, zero_mentions, break_mwt)
 
 
 def remove_empty_node(node):
@@ -59,7 +59,24 @@ def remove_empty_node(node):
     except ValueError:
         return # self may be an already deleted node e.g. if n.remove() called twice
 
-def convert_text_to_conllu(text_docs, conllu_skeleton_file, out_file, use_gold_empty_nodes=True):
+def is_mwt_start(node):
+    return node.multiword_token and node.multiword_token.words[0] == node
+
+def is_mwt_end(node):
+    return node.multiword_token and node.multiword_token.words[-1] == node
+
+def align_words_in_mwt(udapi_nodes, words):
+    j = 0
+    for i in range(len(udapi_nodes)):
+        node = udapi_nodes[i]
+        if is_mwt_start(node):
+            mwt_length = len(node.multiword_token.words)
+            for k in range(mwt_length - 1):
+                words.insert(j+1, udapi_nodes[i + k].form)
+                j += 1
+            j += 1
+
+def convert_text_to_conllu(text_docs, conllu_skeleton_file, out_file, use_gold_empty_nodes=True, break_mwt=False):
     udapi_docs = read_data(conllu_skeleton_file)
     # udapi_docs2 = read_data(conllu_skeleton_file)
     move_head = MoveHead()
@@ -83,6 +100,7 @@ def convert_text_to_conllu(text_docs, conllu_skeleton_file, out_file, use_gold_e
                     j += 1
                 j += 1
         udapi_words = [word for word in udapi_doc.nodes_and_empty]
+        align_words_in_mwt(udapi_words, words)
         for i in range(len(udapi_words)):
             if udapi_words[i].form != words[i].split("|")[0]:
                 logger.warning(f"WARNING: words do not match. DOC: {udapi_doc.meta['docname']}, word1: {words[i].split('|')[0]}, word2: {udapi_words[i].form}, i: {i}")
@@ -103,12 +121,18 @@ def convert_text_to_conllu(text_docs, conllu_skeleton_file, out_file, use_gold_e
                     if eid not in entities:
                         entities[eid] = udapi_doc.create_coref_entity(eid=eid)
                     if mention.startswith("["):
-                        mention_starts[eid].append(i)
+                        start = i
+                        if not break_mwt and udapi_word.multiword_token:
+                            start = i - udapi_word.ord + udapi_word.multiword_token.words[0].ord
+                        mention_starts[eid].append(start)
                     if mention[-1] == "]":
                         if not mention_starts[eid]:
                             logger.warning(f"WARNING: Closing mention which was not opened. DOC: {udapi_doc.meta['docname']}, EID: {eid}")
                             continue
-                        entities[eid].create_mention(words=udapi_words[mention_starts[eid][-1]: i + 1])
+                        end = i
+                        if not break_mwt and udapi_word.multiword_token:
+                            end = i - udapi_word.ord + udapi_word.multiword_token.words[-1].ord
+                        entities[eid].create_mention(words=udapi_words[mention_starts[eid][-1]: end + 1])
                         mention_starts[eid].pop()
         udapi.core.coref.store_coref_to_misc(udapi_doc)
         move_head.run(udapi_doc)
@@ -117,30 +141,33 @@ def convert_text_to_conllu(text_docs, conllu_skeleton_file, out_file, use_gold_e
         write_data(udapi_docs, f)
 
 
-def convert_conllu_file_to_text(filename, output_filename, zero_mentions, blind=False, sequential_ids=True):
+def convert_conllu_file_to_text(filename, output_filename, zero_mentions, blind=False, sequential_ids=True, break_mwt=False):
     if not output_filename:
         output_filename = filename.replace(".conllu", ".txt")
     docs = read_data(filename)
-    convert_to_text(docs, output_filename, zero_mentions, not blind, sequential_ids)
+    convert_to_text(docs, output_filename, zero_mentions, not blind, sequential_ids, break_mwt)
 
 
-def shift_empty_node(node):
+def shift_empty_node(node, break_mwt=True):
     if not node.is_empty():
         return
-    if int(node.ord) == node.deps[0]["parent"].ord:
+    parent = node.deps[0]["parent"]
+    if int(node.ord) == parent.ord:
         return
-    new_ord = node.deps[0]["parent"].ord + 0.1
-    empties = node.deps[0]["parent"].root.empty_nodes
+    if not break_mwt and parent.multiword_token:
+        parent = parent.multiword_token.words[-1]
+    new_ord = parent.ord + 0.1
+    empties = parent.root.empty_nodes
     for empty in empties:
-        if int(empty.ord) == node.deps[0]["parent"].ord:
+        if int(empty.ord) == parent.ord:
             new_ord += 0.1
     node.ord = new_ord
-    node.deps[0]["parent"].root.empty_nodes.sort()
+    parent.root.empty_nodes.sort()
 
 
 
 
-def convert_to_text(docs, out_file, solve_empty_nodes=True, mark_entities=True, sequential_ids=False):
+def convert_to_text(docs, out_file, solve_empty_nodes=True, mark_entities=True, sequential_ids=False, break_mwt=False):
     with open(out_file, "w", encoding="utf-8") as f:
         for doc in docs:
             eids = {}
@@ -149,12 +176,22 @@ def convert_to_text(docs, out_file, solve_empty_nodes=True, mark_entities=True, 
                 for node in doc.nodes_and_empty:
                     if node.is_empty():
                         # node.shift_before_node(node.deps[0]["parent"])
-                        shift_empty_node(node)
+                        shift_empty_node(node, break_mwt)
                 udapi_words = [word for word in doc.nodes_and_empty]
             else:
                 udapi_words = [word for word in doc.nodes]
-            for word in udapi_words:
-                out_word = word.form.replace(" ", "_")
+            for i, word in enumerate(udapi_words):
+                if not break_mwt and word.multiword_token:
+                    if is_mwt_start(word):
+                        out_word = word.multiword_token.form.replace(" ", "_")
+                        mwt_mentions = set()
+                        mention_reprs = []
+                    # elif is_mwt_end(word):
+                    #     pass
+                    # else:
+                    #     continue
+                else:
+                    out_word = word.form.replace(" ", "_")
                 if word.is_empty():
                     out_word = "##" + (out_word if out_word != "_" else "") # empty nodes start with ##
                 mentions = []
@@ -178,12 +215,26 @@ def convert_to_text(docs, out_file, solve_empty_nodes=True, mark_entities=True, 
                                     break
                         mention_start = float(span.split("-")[0])
                         mention_end = float(span.split("-")[1]) if "-" in span else mention_start
-                        if mention_start == float(word.ord) and mention_end == float(word.ord):
-                            mentions.append(f"[{eid}]")
-                        elif mention_start == float(word.ord):
-                            mentions.append(f"[{eid}")
-                        elif mention_end == float(word.ord):
-                            mentions.append(f"{eid}]")
+                        if not break_mwt and word.multiword_token:
+                            if (mention_start, mention_end) not in mwt_mentions:
+                                mwt_mentions.add((mention_start, mention_end))
+                                if mention_start == mention_end:
+                                    mention_reprs.append(f"[{eid}]")
+                                elif mention_start >= word.multiword_token.words[0].ord:
+                                    mention_reprs.append(f"[{eid}")
+                                elif mention_end <= word.multiword_token.words[-1].ord:
+                                    mention_reprs.append(f"{eid}]")
+                                if is_mwt_end(word):
+                                    mentions = mention_reprs
+                        else:
+                            if mention_start == float(word.ord) and mention_end == float(word.ord):
+                                mentions.append(f"[{eid}]")
+                            elif mention_start == float(word.ord):
+                                mentions.append(f"[{eid}")
+                            elif mention_end == float(word.ord):
+                                mentions.append(f"{eid}]")
+                if word.multiword_token and not is_mwt_start(word) and not break_mwt:
+                    continue
                 if len(mentions) > 0:
                     out_words.append(f"{out_word}|{','.join(sorted(mentions))}")
                 else:

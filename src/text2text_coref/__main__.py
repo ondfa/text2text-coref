@@ -55,6 +55,13 @@ def parse_args():
         help="Renumber entity ids starting from 1",
     )
 
+    conllu2text_parser.add_argument(
+        "-m",
+        "--break_mwt",
+        action="store_true",
+        help="Break multi-word tokens into their component words in the output text.",
+    )
+
     text2conllu_parser = subparsers.add_parser(
         "text2conllu",
         prog="text2conll_convertor",
@@ -69,6 +76,12 @@ def parse_args():
         "--zero_mentions",
         action="store_true",
         help="Map zero mentions in the output to the gold empty nodes in CoNLLu.",
+    )
+    text2conllu_parser.add_argument(
+        "-m",
+        "--break_mwt",
+        action="store_true",
+        help="Break multi-word tokens into their component words in the output text.",
     )
 
     conllu2json_parser = subparsers.add_parser(
