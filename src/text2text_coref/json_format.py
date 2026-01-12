@@ -32,14 +32,17 @@ def convert_to_json(docs, out_file, solve_empty_nodes=True, mark_entities=True, 
         clusters_token_offsets = None
         clusters_text_mentions = None
         if mark_entities:
+            node2id = {node: i for i, node in enumerate(doc.nodes_and_empty)}
             clusters_token_offsets = []
             clusters_text_mentions = []
             for entity in doc.coref_entities:
                 entity_mentions = []
                 entity_mention_offsets = []
                 for mention in entity.mentions:
-                    span_start = int(float(mention.span.split("-")[0])) - 1
-                    span_end = int(float(mention.span.split("-")[1])) - 1 if "-" in mention.span else span_start
+                    # span_start = int(float(mention.span.split("-")[0]))
+                    # span_end = int(float(mention.span.split("-")[1])) if "-" in mention.span else span_start
+                    span_start = node2id[mention.words[0]]
+                    span_end = node2id[mention.words[-1]]
                     entity_mention_offsets.append([span_start, span_end])
                     entity_mentions.append(" ".join([word.form for word in mention.words]))
                 if sequential_ids:
