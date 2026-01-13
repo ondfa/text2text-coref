@@ -206,7 +206,7 @@ def _clean_document(document, gold_tok2, gold_zeros=False):
     return " ".join(final_sentences)
 
 
-def read_conllu(filename: str, zero_mentions: bool) -> List[List[List[str]]]:
+def read_conllu(filename: str, zero_mentions: bool, break_mwt=False) -> List[List[List[str]]]:
     """
     Parses a CoNLL-U file into a list structure. Only loads the minimal information
     needed to correct sentence structure.
@@ -225,7 +225,7 @@ def read_conllu(filename: str, zero_mentions: bool) -> List[List[List[str]]]:
         gold_docs_tok2 = []
         next_doc = []
         next_sent: List[str] = []
-
+        current_mwt_end = -1
         for line in gold:
             if not line.strip():
                 continue
@@ -237,6 +237,7 @@ def read_conllu(filename: str, zero_mentions: bool) -> List[List[List[str]]]:
                     if next_sent:
                         next_doc.append(next_sent)
                     next_sent = []
+                    current_mwt_end = -1
 
                 if begins_new_doc:
                     if next_doc:
@@ -247,11 +248,16 @@ def read_conllu(filename: str, zero_mentions: bool) -> List[List[List[str]]]:
 
             number, word = line.split()[:2]
             word = word.replace(" ", "_")
+            if "-" not in number and float(number) <= current_mwt_end:
+                continue  # skip MWT components
             if not zero_mentions and "." in number:
                 continue  # skip empty nodes
 
             if "-" in number:
-                continue  # always skip multitokens
+                if break_mwt:
+                    continue  # skip MWT lines entirely
+                else:
+                    _, current_mwt_end = map(int, number.split("-"))
 
             next_sent.append(word)
 
@@ -270,7 +276,7 @@ def read_input_file(filename: str) -> List[str]:
 
 
 def clean_data(
-    docs: List[str], gold: List[List[List[str]]], gold_zeros: bool = False
+    docs: List[str], gold: List[List[List[str]]], gold_zeros: bool = False,
 ) -> List[str]:
     return [_clean_document(doc, gold_doc, gold_zeros) for doc, gold_doc in zip(docs, gold)]
 
@@ -280,12 +286,13 @@ def clean_file(
     gold_filename: str,
     output_filename: str | None = None,
     zero_mentions: bool = True,
+    break_mwt=False,
 ):
     logging.info(f"Reading input file: {filename}")
     data = read_input_file(filename)
 
     logging.info(f"Reading gold file: {gold_filename}")
-    gold_docs_tok2 = read_conllu(gold_filename, zero_mentions)
+    gold_docs_tok2 = read_conllu(gold_filename, zero_mentions, break_mwt)
 
     logging.info("Cleaning data")
     clean = clean_data(data, gold_docs_tok2, gold_zeros=zero_mentions)
