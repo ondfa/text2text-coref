@@ -12,7 +12,6 @@ logger = logging.getLogger()
 
 
 def convert_to_json(docs, out_file, solve_empty_nodes=True, mark_entities=True, sequential_ids=False):
-    import json
     output_data = []
     for doc in docs:
         eids = {}
@@ -39,12 +38,18 @@ def convert_to_json(docs, out_file, solve_empty_nodes=True, mark_entities=True, 
                 entity_mentions = []
                 entity_mention_offsets = []
                 for mention in entity.mentions:
-                    # span_start = int(float(mention.span.split("-")[0]))
-                    # span_end = int(float(mention.span.split("-")[1])) if "-" in mention.span else span_start
+                    if "," in mention.span:
+                        # span = span.split(",")[0]
+                        root = mention.words[0].root
+                        for subspan in mention.span.split(','):
+                            subspan_words = udapi.core.coref.span_to_nodes(root, subspan)
+                            if mention.head in subspan_words:
+                                mention.words = subspan_words
+                                break
                     span_start = node2id[mention.words[0]]
                     span_end = node2id[mention.words[-1]]
                     entity_mention_offsets.append([span_start, span_end])
-                    entity_mentions.append(" ".join([word.form for word in mention.words]))
+                    entity_mentions.append(" ".join([word.form.replace(" ", "_") for word in mention.words]))
                 if sequential_ids:
                     if entity.eid not in eids:
                         eids[entity.eid] = f"e{len(eids) + 1}"
