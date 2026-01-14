@@ -59,6 +59,15 @@ def remove_empty_node(node):
     except ValueError:
         return # self may be an already deleted node e.g. if n.remove() called twice
 
+def reduce_discontinuous_mention(mention):
+    """Reduce a mention to a continuous span if it is discontinuous."""
+    root = mention.words[0].root
+    for subspan in mention.span.split(','):
+        subspan_words = udapi.core.coref.span_to_nodes(root, subspan)
+        if mention.head in subspan_words:
+            mention.words = subspan_words
+            break
+
 def is_mwt_start(node):
     return node.multiword_token and node.multiword_token.words[0] == node
 
@@ -206,15 +215,9 @@ def convert_to_text(docs, out_file, solve_empty_nodes=True, mark_entities=True, 
                             eid = eids[mention.entity.eid]
                         else:
                             eid = mention.entity.eid
+                        if "," in mention.span:
+                            reduce_discontinuous_mention(mention)
                         span = mention.span
-                        if "," in span:
-                            root = mention.words[0].root
-                            for subspan in span.split(','):
-                                subspan_words = udapi.core.coref.span_to_nodes(root, subspan)
-                                if mention.head in subspan_words:
-                                    mention.words = subspan_words
-                                    span = subspan
-                                    break
                         mention_start = float(span.split("-")[0])
                         mention_end = float(span.split("-")[1]) if "-" in span else mention_start
                         if not break_mwt and word.multiword_token:
