@@ -160,10 +160,10 @@ def shift_empty_node(node, break_mwt=True):
     if not node.is_empty():
         return
     parent = node.deps[0]["parent"]
-    if int(node.ord) == parent.ord:
-        return
     if not break_mwt and parent.multiword_token:
         parent = parent.multiword_token.words[-1]
+    if int(node.ord) == parent.ord:
+        return
     new_ord = parent.ord + 0.1
     empties = parent.root.empty_nodes
     for empty in empties:
@@ -218,8 +218,8 @@ def convert_to_text(docs, out_file, solve_empty_nodes=True, mark_entities=True, 
                         mention_start = float(span.split("-")[0])
                         mention_end = float(span.split("-")[1]) if "-" in span else mention_start
                         if not break_mwt and word.multiword_token:
-                            if (mention_start, mention_end) not in mwt_mentions:
-                                mwt_mentions.add((mention_start, mention_end))
+                            if (word.root, eid, mention_start, mention_end) not in mwt_mentions:
+                                mwt_mentions.add((word.root, eid, mention_start, mention_end))
                                 if mention_start >= word.multiword_token.words[0].ord and mention_end <= word.multiword_token.words[-1].ord:
                                     mention_reprs.append(f"[{eid}]")
                                 elif mention_start >= word.multiword_token.words[0].ord:
