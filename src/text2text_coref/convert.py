@@ -74,16 +74,25 @@ def is_mwt_start(node):
 def is_mwt_end(node):
     return node.multiword_token and node.multiword_token.words[-1] == node
 
-def align_words_in_mwt(udapi_nodes, words):
-    j = 0
-    for i in range(len(udapi_nodes)):
-        node = udapi_nodes[i]
-        if is_mwt_start(node):
-            mwt_length = len(node.multiword_token.words)
-            for k in range(mwt_length - 1):
-                words.insert(j+1, udapi_nodes[i + k].form)
-                j += 1
+def align_words(udapi_doc, words, use_gold_empty_nodes, break_mwt):
+    for word in udapi_doc.nodes_and_empty:
+        word.misc = {}
+        # Remove empty nodes
+        if not use_gold_empty_nodes and word.is_empty():
+            remove_empty_node(word)
+    j = 1
+    udapi_words = [word for word in udapi_doc.nodes]
+    for i in range(len(udapi_words)):
+        word = udapi_words[i]
+        if not break_mwt and is_mwt_start(word):
+            mwt_length = len(word.multiword_token.words)
+            for k in range(1, mwt_length):
+                words.insert(j, udapi_words[i + k].form)
+        while j < len(words) and not use_gold_empty_nodes and words[j].startswith("##"):
+            word.create_empty_child("_", after=True)
             j += 1
+        j += 1
+
 
 def convert_text_to_conllu(text_docs, conllu_skeleton_file, out_file, use_gold_empty_nodes=True, break_mwt=False):
     udapi_docs = read_data(conllu_skeleton_file)
@@ -95,33 +104,11 @@ def convert_text_to_conllu(text_docs, conllu_skeleton_file, out_file, use_gold_e
     x = 0
     for text, udapi_doc in zip(text_docs, udapi_docs):
         words = text.split(" ")
-        udapi_words = [word for word in udapi_doc.nodes]
-        # if x == 96:
-        #     print("")
-        for word in udapi_doc.nodes_and_empty:
-            word.misc = {}
-            # Remove empty nodes
-            if not use_gold_empty_nodes and word.is_empty():
-                remove_empty_node(word)
-        j = 1
-        for i in range(len(udapi_words)):
-            word = udapi_words[i]
-            if is_mwt_start(word):
-                mwt_length = len(word.multiword_token.words)
-                for k in range(1, mwt_length):
-                    words.insert(j, udapi_words[i + k].form)
-                    # j += 1
-            while j < len(words) and not use_gold_empty_nodes and words[j].startswith("##"):
-                word.create_empty_child("_", after=True)
-                j += 1
-            j += 1
+        align_words(udapi_doc, words, use_gold_empty_nodes, break_mwt)
         udapi_words = [word for word in udapi_doc.nodes_and_empty]
-        # align_words_in_mwt(udapi_words, words)
         for i in range(len(udapi_words)):
             if udapi_words[i].form != words[i].split("|")[0]:
                 logger.warning(f"WARNING: words do not match. DOC: {udapi_doc.meta['docname']}, word1: {words[i].split('|')[0]}, word2: {udapi_words[i].form}, i: {i}")
-        # if len(udapi_words) != len(words):
-        #     continue
         assert len(udapi_words) == len(words)
         mention_starts = defaultdict(list)
         entities = {}

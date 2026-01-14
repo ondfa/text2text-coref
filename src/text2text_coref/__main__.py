@@ -93,12 +93,6 @@ def parse_args():
     conllu2json_parser.add_argument("filename")
     conllu2json_parser.add_argument("-o", "--output_filename", default=None)
     conllu2json_parser.add_argument(
-        "-s",
-        "--sequential_ids",
-        action="store_true",
-        help="Renumber entity ids starting from 1",
-    )
-    conllu2json_parser.add_argument(
         "-z",
         "--zero_mentions",
         action="store_true",
@@ -110,6 +104,12 @@ def parse_args():
         "--blind",
         action="store_true",
         help="discard annotations",
+    )
+    conllu2json_parser.add_argument(
+        "-m",
+        "--break_mwt",
+        action="store_true",
+        help="Break multi-word tokens into their component words in the output text.",
     )
 
     json2conllu_parser = subparsers.add_parser(
@@ -125,6 +125,12 @@ def parse_args():
         "--use_gold_empty_nodes",
         action="store_true",
         help="Use gold empty nodes from the skeleton CoNLLu file.",
+    )
+    json2conllu_parser.add_argument(
+        "-m",
+        "--break_mwt",
+        action="store_true",
+        help="Break multi-word tokens into their component words in the output text.",
     )
 
     return main_parser.parse_args()
