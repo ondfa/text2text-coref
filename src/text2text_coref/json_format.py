@@ -1,4 +1,4 @@
-from .convert import shift_empty_node
+from .convert import shift_empty_node, reduce_discontinuous_mention
 import udapi
 from collections import defaultdict
 import logging
@@ -39,13 +39,7 @@ def convert_to_json(docs, out_file, solve_empty_nodes=True, mark_entities=True, 
                 entity_mention_offsets = []
                 for mention in entity.mentions:
                     if "," in mention.span:
-                        # span = span.split(",")[0]
-                        root = mention.words[0].root
-                        for subspan in mention.span.split(','):
-                            subspan_words = udapi.core.coref.span_to_nodes(root, subspan)
-                            if mention.head in subspan_words:
-                                mention.words = subspan_words
-                                break
+                        reduce_discontinuous_mention(mention)
                     span_start = node2id[mention.words[0]]
                     span_end = node2id[mention.words[-1]]
                     entity_mention_offsets.append([span_start, span_end])
