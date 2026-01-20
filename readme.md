@@ -45,6 +45,46 @@ There are several usage scenarios:
 - If you want to train a model to predict also the empty nodes and/or zero mentions add them to the train/test data with `--zero_mentions` option (`--blind --zero_mentions` generates just empty nodes) 
 - Using `--sequential_ids` is recommended since LLm can learn increasing entity numbers from 1 per document but it cannot guess the shift when we have global EID like in CorefUD.
 
+### Json Format
+The tool also supports JSON format for input and output. Use the `--conllu2json` and `--json2conllu` commands convert inputs and outputs. The typical usage is similar to the text format:
+```bash
+python -m text2text_coref conllu2json <input_file> --blind [--zero_mentions] -o input_data.json
+python -m text2text_coref json2conllu <predictions.json> <conll_skeleton_file> -o output_data.conllu
+```
+
+Here is an example of the JSON structure used:
+
+```json
+[
+  {
+    "doc_id": "CESS-CAST-A-20000217-13959", 
+    "tokens": [
+        "Los", "jugadores", "de", "el", "Espanyol", "aseguraron", "hoy", "que", 
+        "prefieren", "##", "enfrentar", "se", "a", "el", "Barcelona", "en", "la", 
+        "final", "de", "la", "Copa", "de", "el", "Rey", "en", "lugar", "de", "en", "las", 
+        "semifinales", ",", "tras", "clasificar", "se", "ayer", "ambos", "equipos", 
+        "catalanes", "para", "esta", "ronda"
+    ], 
+    "clusters_token_offsets": [
+        [ [0, 4], [9, 9] ], 
+        [ [4, 4] ], 
+        [ [14, 14] ], 
+        [ [16, 23] ], 
+        [ [19, 23] ],
+        [ [  28,  29 ], [39, 40] ], 
+        [ [35, 37] ]
+    ],
+    "clusters_text_mentions": [
+        ["Los jugadores de el Espanyol", "_"], 
+        ["Espanyol"], 
+        ["Barcelona"], 
+        ["la final de la Copa de el Rey"], 
+        ["la Copa de el Rey"], 
+        ["las semifinales", "esta ronda"], 
+        ["ambos equipos catalanes"]
+    ]
+    }]
+```
 
 ### Python API
 
