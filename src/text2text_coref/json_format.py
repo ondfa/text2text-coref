@@ -43,7 +43,7 @@ def convert_to_json(docs, out_file, solve_empty_nodes=True, mark_entities=True, 
                     span_start = node2id[mention.words[0]]
                     span_end = node2id[mention.words[-1]]
                     entity_mention_offsets.append([span_start, span_end])
-                    entity_mentions.append(" ".join([word.form.replace(" ", "_") for word in mention.words]))
+                    entity_mentions.append(" ".join([word.form if not word.is_empty() else "##" + (word.form if word.form != "_" else "") for word in mention.words]))
                 if sequential_ids:
                     if entity.eid not in eids:
                         eids[entity.eid] = f"e{len(eids) + 1}"
