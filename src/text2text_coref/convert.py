@@ -126,11 +126,11 @@ def convert_text_to_conllu(text_docs, conllu_skeleton_file, out_file, use_gold_e
         write_data(udapi_docs, f)
 
 
-def convert_conllu_file_to_text(filename, output_filename, zero_mentions, blind=False, sequential_ids=True):
+def convert_conllu_file_to_text(filename, output_filename, zero_mentions, blind=False, sequential_ids=True, no_empty_node_form=False):
     if not output_filename:
         output_filename = filename.replace(".conllu", ".txt")
     docs = read_data(filename)
-    convert_to_text(docs, output_filename, zero_mentions, not blind, sequential_ids)
+    convert_to_text(docs, output_filename, zero_mentions, not blind, sequential_ids, not no_empty_node_form)
 
 
 def shift_empty_node(node):
@@ -149,7 +149,7 @@ def shift_empty_node(node):
 
 
 
-def convert_to_text(docs, out_file, solve_empty_nodes=True, mark_entities=True, sequential_ids=False):
+def convert_to_text(docs, out_file, solve_empty_nodes=True, mark_entities=True, sequential_ids=False, empty_node_form=True):
     with open(out_file, "w", encoding="utf-8") as f:
         for doc in docs:
             eids = {}
@@ -165,7 +165,7 @@ def convert_to_text(docs, out_file, solve_empty_nodes=True, mark_entities=True, 
             for word in udapi_words:
                 out_word = word.form.replace(" ", "_")
                 if word.is_empty():
-                    out_word = "##" + (out_word if out_word != "_" else "") # empty nodes start with ##
+                    out_word = "##" + (out_word if out_word != "_" and empty_node_form else "") # empty nodes start with ##
                 mentions = []
                 if mark_entities:
                     for mention in set(word.coref_mentions):

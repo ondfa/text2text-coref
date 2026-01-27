@@ -11,7 +11,7 @@ logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s - %(message)s
 logger = logging.getLogger()
 
 
-def convert_to_json(docs, out_file, solve_empty_nodes=True, mark_entities=True, sequential_ids=False):
+def convert_to_json(docs, out_file, solve_empty_nodes=True, mark_entities=True, sequential_ids=False, empty_node_form=True):
     output_data = []
     for doc in docs:
         eids = {}
@@ -26,7 +26,7 @@ def convert_to_json(docs, out_file, solve_empty_nodes=True, mark_entities=True, 
         for word in udapi_words:
             out_word = word.form.replace(" ", "_")
             if word.is_empty():
-                out_word = "##" + (out_word if out_word != "_" else "") # empty nodes start with ##
+                out_word = "##" + (out_word if out_word != "_" and empty_node_form else "") # empty nodes start with ##
             out_words.append(out_word)
         clusters_token_offsets = None
         clusters_text_mentions = None
@@ -43,7 +43,7 @@ def convert_to_json(docs, out_file, solve_empty_nodes=True, mark_entities=True, 
                     span_start = node2id[mention.words[0]]
                     span_end = node2id[mention.words[-1]]
                     entity_mention_offsets.append([span_start, span_end])
-                    entity_mentions.append(" ".join([word.form if not word.is_empty() else "##" + (word.form if word.form != "_" else "") for word in mention.words]))
+                    entity_mentions.append(" ".join([word.form if not word.is_empty() else "##" + (word.form if word.form != "_" and empty_node_form else "") for word in mention.words]))
                 if sequential_ids:
                     if entity.eid not in eids:
                         eids[entity.eid] = f"e{len(eids) + 1}"
@@ -62,11 +62,11 @@ def convert_to_json(docs, out_file, solve_empty_nodes=True, mark_entities=True, 
     formatter.ensure_ascii = False
     formatter.dump(output_data, out_file)
 
-def convert_conllu_file_to_json(filename, output_filename, zero_mentions, blind=False, sequential_ids=True):
+def convert_conllu_file_to_json(filename, output_filename, zero_mentions, blind=False, sequential_ids=True, no_empty_node_form=False):
     if not output_filename:
         output_filename = filename.replace(".conllu", ".json")
     docs = read_data(filename)
-    convert_to_json(docs, output_filename, zero_mentions, not blind, sequential_ids)
+    convert_to_json(docs, output_filename, zero_mentions, not blind, sequential_ids, not no_empty_node_form)
 
 def convert_json_to_conllu(json_filename, conllu_skeleton_filename, output_filename, use_gold_empty_nodes=True):
     import json
