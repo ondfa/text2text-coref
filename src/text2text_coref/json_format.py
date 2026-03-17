@@ -4,7 +4,7 @@ from .convert import shift_empty_node, reduce_discontinuous_mention
 import udapi
 from collections import defaultdict
 import logging
-from .convert import read_data
+from .convert import read_data, remove_entity_annotations
 import pprint
 from compact_json import Formatter
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s - %(message)s',
@@ -88,7 +88,7 @@ def convert_json_to_conllu(json_filename, conllu_skeleton_filename, output_filen
         words = doc["tokens"]
         udapi_words = [word for word in udapi_doc.nodes]
         for word in udapi_doc.nodes_and_empty:
-            word.misc = {}
+            remove_entity_annotations(word)
             # Remove empty nodes
             if not use_gold_empty_nodes and word.is_empty():
                 remove_empty_node(word)
@@ -101,12 +101,12 @@ def convert_json_to_conllu(json_filename, conllu_skeleton_filename, output_filen
             for i in range(len(udapi_words)):
                 word = udapi_words[i]
                 while j < len(words) and words[j].startswith("##"):
-                    word.create_empty_child("_", after=True)
+                    word.create_empty_child("dep", after=True)
                     j += 1
                 j += 1
         udapi_words = [word for word in udapi_doc.nodes_and_empty]
         for i in range(len(udapi_words)):
-            if udapi_words[i].form != words[i].split("|")[0]:
+            if udapi_words[i].form != words[i].replace("##", ""):
                 logger.warning(f"WARNING: words do not match. DOC: {udapi_doc.meta['docname']}, word1: {words[i].split('|')[0]}, word2: {udapi_words[i].form}, i: {i}")
 
         assert len(udapi_words) == len(words)

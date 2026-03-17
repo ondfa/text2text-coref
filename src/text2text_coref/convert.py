@@ -51,6 +51,8 @@ def remove_empty_node(node):
     for n in node.root.empty_nodes + node.root.descendants:
         if n.deps:
             n.deps = [x for x in n.deps if x["parent"] != node]
+            if len(n.deps) == 0:
+                n.deps.append({"deprel": n.deprel, "parent": n.parent})
     to_reorder = [e for e in node.root.empty_nodes if node.ord < e.ord < node.ord + 1]
     for empty in to_reorder:
         empty.ord = round(empty.ord - 0.1, 1)
@@ -61,6 +63,8 @@ def remove_empty_node(node):
     for n in node._root.empty_nodes + node._root._descendants:
         if n._deps:
             n._deps = [dep for dep in n._deps if dep["parent"] != node]
+            if len(n.deps) == 0:
+                n.deps.append({"deprel": n.deprel, "parent": n.parent})
 
 def reduce_discontinuous_mention(mention):
     """Reduce a mention to a continuous span if it is discontinuous."""
@@ -70,6 +74,10 @@ def reduce_discontinuous_mention(mention):
         if mention.head in subspan_words:
             mention.words = subspan_words
             break
+
+def remove_entity_annotations(node):
+    for attr in ('Entity', 'Bridge', 'SplitAnte'):
+        del node.misc[attr]
 
 def convert_text_to_conllu(text_docs, conllu_skeleton_file, out_file, use_gold_empty_nodes=True):
     udapi_docs = read_data(conllu_skeleton_file)
@@ -82,7 +90,7 @@ def convert_text_to_conllu(text_docs, conllu_skeleton_file, out_file, use_gold_e
         words = text.split(" ")
         udapi_words = [word for word in udapi_doc.nodes]
         for word in udapi_doc.nodes_and_empty:
-            word.misc = {}
+            remove_entity_annotations(word)
             # Remove empty nodes
             if not use_gold_empty_nodes and word.is_empty():
                 remove_empty_node(word)
@@ -93,12 +101,12 @@ def convert_text_to_conllu(text_docs, conllu_skeleton_file, out_file, use_gold_e
             for i in range(len(udapi_words)):
                 word = udapi_words[i]
                 while j < len(words) and words[j].startswith("##"):
-                    word.create_empty_child("_", after=True)
+                    word.create_empty_child("dep", after=True)
                     j += 1
                 j += 1
         udapi_words = [word for word in udapi_doc.nodes_and_empty]
         for i in range(len(udapi_words)):
-            if udapi_words[i].form != words[i].split("|")[0]:
+            if udapi_words[i].form != words[i].split("|")[0].replace("##", ""):
                 logger.warning(f"WARNING: words do not match. DOC: {udapi_doc.meta['docname']}, word1: {words[i].split('|')[0]}, word2: {udapi_words[i].form}, i: {i}")
         # if len(udapi_words) != len(words):
         #     continue
